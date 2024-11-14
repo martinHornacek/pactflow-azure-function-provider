@@ -1,0 +1,45 @@
+{
+  "consumer": {
+    "name": "pactflow-azure-function-consumer"
+  },
+  "interactions": [
+    {
+      "description": "A request to get sample data",
+      "pending": false,
+      "request": {
+        "method": "GET",
+        "path": "/sample/27"
+      },
+      "response": {
+        "body": {
+          "content": {
+            "Description": "food",
+            "Id": "27",
+            "Name": "burger"
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json; charset=utf-8"
+          ]
+        },
+        "status": 200
+      },
+      "type": "Synchronous/HTTP"
+    }
+  ],
+  "metadata": {
+    "pactRust": {
+      "ffi": "0.4.23",
+      "models": "1.2.5"
+    },
+    "pactSpecification": {
+      "version": "4.0"
+    }
+  },
+  "provider": {
+    "name": "pactflow-azure-function-provider"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "SampleProviderTests": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

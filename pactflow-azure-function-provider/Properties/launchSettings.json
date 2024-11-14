@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "pactflow_azure_function_provider": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7071",
+      "launchBrowser": false
+    }
+  }
+}
