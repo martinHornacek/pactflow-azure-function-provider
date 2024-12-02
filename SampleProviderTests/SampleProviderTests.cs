@@ -1,41 +1,37 @@
-﻿using Grpc.Core;
-using Grpc.Net.Client;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Azure.Cosmos;
-using Microsoft.Azure.Functions.Worker;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using NSubstitute;
-using PactNet;
+﻿using PactNet;
 using PactNet.Infrastructure.Outputters;
 using PactNet.Output.Xunit;
 using PactNet.Verifier;
-using StackExchange.Redis;
+using System.Diagnostics;
 using Xunit.Abstractions;
 
 namespace SampleProviderTests
 {
-    public class SampleProviderTests 
+    public class SampleProviderTests : IDisposable
     {
         public const string ProviderName = "pactflow-example-provider-dotnet";
         public const string PactName = "pactflow-azure-function-consumer-pactflow-azure-function-provider.json";
 
-        private readonly string _providerUri;
+        public static readonly string SolutionRootFolder = Path.Join("..", "..", "..", "..", "pactflow-azure-function-provider");
+
+        private readonly Uri _providerUri;
         private readonly string _pactFilePathName;
         private readonly ITestOutputHelper _outputHelper;
+        private Process _process;
+        private bool disposedValue;
 
         public SampleProviderTests(ITestOutputHelper output)
         {
             _outputHelper = output;
-            _providerUri = "http://localhost:7071";
+            _providerUri = new Uri("http://localhost:7071/api");
             _pactFilePathName = Path.Join("..", "..", "..", "..", "pacts", PactName);
         }
 
         [Fact]
         public async Task EnsureProviderApiHonoursPactWithConsumer()
         {
+            _process = await FunctionHostHelpers.StartFunctionHostAsync(SolutionRootFolder);
+
             PactVerifierConfig config = new PactVerifierConfig
             {
                 Outputters = new List<IOutput>
@@ -45,55 +41,35 @@ namespace SampleProviderTests
                 },
                 LogLevel = PactLogLevel.Debug
             };
+            IPactVerifier pactVerifier = new PactVerifier(ProviderName, config);
 
-            var host = new HostBuilder()
-                .ConfigureFunctionsWebApplication()
-                .ConfigureServices((context, services) =>
-                {
-                    IConnectionMultiplexer redis = Substitute.For<IConnectionMultiplexer>();
-                    Container container = Substitute.ForPartsOf<Container>();
-                    services.AddSingleton(redis);
-                    services.AddSingleton(container);
+            pactVerifier.WithHttpEndpoint(_providerUri)
+                .WithFileSource(new FileInfo(_pactFilePathName))
+                .Verify();
+        }
 
-                    services.AddFunctionsWorkerDefaults();
-                    services.AddApplicationInsightsTelemetryWorkerService();
-                    services.ConfigureFunctionsApplicationInsights();
-
-                    services.Configure<GrpcChannelOptions>(options =>
-                    {
-                        options.Credentials = ChannelCredentials.Insecure;
-                    });
-                })
-                .ConfigureAppConfiguration((context, config) =>
-                {
-                    var functionProjectPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..", "pactflow-azure-function-provider", "bin", "Debug", "net8.0"));
-
-                    config.AddInMemoryCollection(new Dictionary<string, string?>
-                    {
-                        ["Functions:Worker:HostEndpoint"] = _providerUri,
-                        ["Functions:Worker:Runtime"] = "dotnet-isolated",
-                        ["Functions:Worker:WorkerId"] = Guid.NewGuid().ToString(),
-                        ["AzureWebJobsStorage"] = "UseDevelopmentStorage=true",
-                        ["AzureWebJobsScriptRoot"] = functionProjectPath,
-                    });
-                })
-                .ConfigureLogging(logging =>
-                {
-                    logging.AddConsole();
-                    logging.AddDebug();
-                    logging.SetMinimumLevel(LogLevel.Debug);
-                })
-                .Build();
-
-            using (host)
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
             {
-                await host.StartAsync();
-                IPactVerifier pactVerifier = new PactVerifier(ProviderName, config);
+                if (disposing)
+                {
+                    if (_process != null && !_process.HasExited)
+                    {
+                        _process.Kill();
+                        _process.WaitForExit();
+                    }
 
-                pactVerifier.WithHttpEndpoint(new Uri(_providerUri))
-                    .WithFileSource(new FileInfo(_pactFilePathName))
-                    .Verify();
+                    _process?.Dispose();
+                }
+                disposedValue = true;
             }
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

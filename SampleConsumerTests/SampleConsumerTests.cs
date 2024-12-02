@@ -37,7 +37,7 @@ namespace SampleConsumerTests
                         .WithRequest(HttpMethod.Get, $"/sample/{id}")
                     .WillRespond()
                     .WithStatus(HttpStatusCode.OK)
-                    .WithHeader("Content-Type", "application/json; charset=utf-8")
+                    .WithHeader("Content-Type", "application/json")
                     .WithJsonBody(_sampleData);
 
             await _pact.VerifyAsync(async ctx =>
