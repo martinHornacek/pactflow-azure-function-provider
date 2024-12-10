@@ -35,7 +35,7 @@ namespace SampleProviderTests
                 var startInfo = new ProcessStartInfo
                 {
                     FileName = FuncExeFilePath,
-                    Arguments = $"host start --port {port}",
+                    Arguments = $"host start --port {port} --no-build --prefix bin/output",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
