@@ -31,15 +31,15 @@ namespace pactflow_azure_function_provider
                     services.ConfigureFunctionsApplicationInsights();
 
                     // Get the environment (e.g., Development, Production)
-                    string environment = Environment.GetEnvironmentVariable("ENVIRONMENT") ?? "Production";
+                    string environment = Environment.GetEnvironmentVariable("ENVIRONMENT");
 
-                    if (environment.Equals("Development", StringComparison.OrdinalIgnoreCase))
+                    if (environment != null && environment.Equals("Pactflow", StringComparison.OrdinalIgnoreCase))
                     {
-                        ConfigureDevelopmentServices(services);
+                        ConfigureServicesForPactflow(services);
                     }
                     else
                     {
-                        ConfigureProductionServices(services);
+                        ConfigureRealServices(services);
                     }
                 })
                 .Build();
@@ -47,7 +47,7 @@ namespace pactflow_azure_function_provider
             host.Run();
         }
 
-        private static void ConfigureDevelopmentServices(IServiceCollection services)
+        public static void ConfigureServicesForPactflow(IServiceCollection services)
         {
             string cosmosDatabaseName = Environment.GetEnvironmentVariable("COSMOS_DB_DATABASE_NAME");
             string cosmosContainerName = Environment.GetEnvironmentVariable("COSMOS_DB_CONTAINER_NAME");
@@ -99,7 +99,7 @@ namespace pactflow_azure_function_provider
         }
 
 
-        private static void ConfigureProductionServices(IServiceCollection services)
+        public static void ConfigureRealServices(IServiceCollection services)
         {
             // Read Cosmos DB settings from environment variables
             string cosmosConnectionString = Environment.GetEnvironmentVariable("COSMOS_DB_CONNECTION_STRING");

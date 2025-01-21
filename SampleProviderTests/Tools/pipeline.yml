@@ -1,0 +1,77 @@
+name: 1.0.$(date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+- master
+
+variables:
+  # Azure Resource Manager connection created during pipeline creation
+  azureSubscription: 'Azure Portal - Dev'
+ 
+  # Agent VM image name
+  vmImageName: 'windows-latest'
+
+stages:
+- stage: Build
+  displayName: Build stage
+ 
+  jobs:
+  - job: Build
+    displayName: Build
+    pool: AzureVM
+ 
+    steps:  
+    - task: NuGetToolInstaller@1
+      inputs:
+        checkLatest: true
+        
+    - task: NuGetAuthenticate@1
+      inputs:
+        forceReinstallCredentialProvider: true
+
+    - task: DotNetCoreCLI@2
+      displayName: Restore packages for pactflow-azure-function-provider project
+      inputs:
+        command: 'restore'
+        projects: |
+          source\repos\pactflow-azure-function-provider/pactflow-azure-function-provider.sln
+
+    - task: DotNetCoreCLI@2
+      displayName: Build pactflow-azure-function-provider solution
+      inputs:
+        command: 'build'
+        projects: |
+          source\repos\pactflow-azure-function-provider/pactflow-azure-function-provider.sln
+        arguments: '--configuration $(BuildConfiguration)'
+        workingDirectory: 'source/repos/pactflow-azure-function-provider/'
+
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'test'
+        projects: 'source/repos/pactflow-azure-function-provider/SampleConsumerTests.csproj'
+        arguments: '--configuration $(buildConfiguration) --filter "TestCategory=PactFlow.Consumer"'
+      displayName: 'Run Pactflow Consumer tests'
+      continueOnError: false 
+
+    - script:
+        .\pact-broker publish "$(Agent.BuildDirectory)/s/source/repos/pactflow-azure-function-provider/pacts" --consumer-app-version=1.0.0-$(Build.SourceVersion) --broker-base-url=<BROKER URL> --branch=develop --broker-token=<ACCESS TOKEN> --auto-detect-version-properties --tag-with-git-branch --verbose 
+      workingDirectory: '../../../../../pact/bin'
+      displayName: Publish Consumer pacts
+      
+    - task: PowerShell@2
+      inputs:
+        targetType: 'filePath'
+        filePath: "$(Agent.BuildDirectory)/s/source/repos/pactflow-azure-function-provider/SampleProviderTests/Tools/StartFunctionHost.ps1"
+        arguments: "-FuncExePath 'C:/Program Files/Microsoft/Azure Functions Core Tools/in-proc8/func.exe' -AzureFunctionProjectFolder '$(Agent.BuildDirectory)/s/source/repos/pactflow-azure-function-provider/pactflow-azure-function-provider'"
+      displayName: Start Azure function Host process
+
+    - script:      
+        .\pact-provider-verifier --provider-base-url=http://localhost:7071 --pact-broker-base-url=<BROKER URL> --provider "pactflow-azure-function-provider" --broker-token=<ACCESS TOKEN> --consumer-version-tag=1.0.0-$(Build.SourceVersion) --enable-pending=true --provider-version-branch=develop --include-wip-pacts-since=2025-01-01 --publish-verification-results=true --fail-if-no-pacts-found=true --provider-app-version=1.0.0-$(Build.SourceVersion) --verbose
+      workingDirectory: '../../../../../pact/bin'
+      displayName: OfferV1 - Verify Consumer pacts and publish the results to Pact Broker
+
+
+    - task: PowerShell@2
+      inputs:
+        targetType: 'filePath'
+        filePath: "$(Agent.BuildDirectory)/s/source/repos/pactflow-azure-function-provider/SampleProviderTests/Tools/StopFunctionHost.ps1"
+      displayName: Cleanup Azure Function Host processes

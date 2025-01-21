@@ -13,6 +13,12 @@ namespace pactflow_azure_function_provider
             response.EnsureSuccessStatusCode();
 
             var result = await response.Content.ReadAsStringAsync();
+
+            if (result == null)
+            {
+                return new SampleDataModel();
+            }
+
             return JsonSerializer.Deserialize<SampleDataModel>(result);
         }
     }

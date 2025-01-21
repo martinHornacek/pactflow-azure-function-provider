@@ -3,6 +3,7 @@ using pactflow_azure_function_provider.Models;
 using PactNet;
 using PactNet.Infrastructure.Outputters;
 using PactNet.Output.Xunit;
+using System.ComponentModel;
 using System.Net;
 using Xunit.Abstractions;
 
@@ -28,6 +29,7 @@ namespace SampleConsumerTests
         }
 
         [Fact]
+        [Category("PactFlow.Consumer")]
         public async Task RetrieveSampleData()
         {
             // Arrange

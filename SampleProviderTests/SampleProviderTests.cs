@@ -2,6 +2,7 @@
 using PactNet.Infrastructure.Outputters;
 using PactNet.Output.Xunit;
 using PactNet.Verifier;
+using System.ComponentModel;
 using System.Diagnostics;
 using Xunit.Abstractions;
 
@@ -28,10 +29,9 @@ namespace SampleProviderTests
         }
 
         [Fact]
+        [Category("PactFlow.Provider")]
         public async Task EnsureProviderApiHonoursPactWithConsumer()
         {
-            _process = await FunctionHostHelpers.StartFunctionHostAsync(SolutionRootFolder);
-
             PactVerifierConfig config = new PactVerifierConfig
             {
                 Outputters = new List<IOutput>
