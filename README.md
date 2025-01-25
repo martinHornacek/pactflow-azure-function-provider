@@ -131,9 +131,3 @@ The Azure DevOps pipeline (`pipeline.yml`) is located in the `Tools` folder of `
 ## Contributing
 
 Feel free to contribute by opening issues or submitting pull requests. Ensure tests pass before submission.
-
----
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
