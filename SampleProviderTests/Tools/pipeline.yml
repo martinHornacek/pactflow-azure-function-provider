@@ -67,7 +67,7 @@ stages:
     - script:      
         .\pact-provider-verifier --provider-base-url=http://localhost:7071 --pact-broker-base-url=<BROKER URL> --provider "pactflow-azure-function-provider" --broker-token=<ACCESS TOKEN> --consumer-version-tag=1.0.0-$(Build.SourceVersion) --enable-pending=true --provider-version-branch=develop --include-wip-pacts-since=2025-01-01 --publish-verification-results=true --fail-if-no-pacts-found=true --provider-app-version=1.0.0-$(Build.SourceVersion) --verbose
       workingDirectory: '../../../../../pact/bin'
-      displayName: OfferV1 - Verify Consumer pacts and publish the results to Pact Broker
+      displayName: Verify Consumer pacts and publish the results to Pact Broker
 
 
     - task: PowerShell@2
